@@ -15,7 +15,10 @@ impl Memory {
     pub fn read_byte(&self, addr: u16) -> u8 {
         match addr {
             0x0000..=0x1fff => self.rom[addr as usize],
-            0x2000..0x3fff => self.ram[addr as usize],
+            0x2000..0x3fff => {
+                let n_addr = addr - 0x2000;
+                self.ram[n_addr as usize]
+            },
             _ => panic!("out of memory")
         }
     }
@@ -23,13 +26,14 @@ impl Memory {
     pub fn read_word(&self, addr: u16) -> u16 {
         match addr {
             0x0000..=0x1fff => {
-                let bh = (self.rom[addr as usize] << 8) as u16;
-                let bl = self.rom[(addr + 1) as usize] as u16;
+                let bl = (self.rom[addr as usize]) as u16;
+                let bh = self.rom[(addr + 1) as usize] as u16;
                 (bh << 8) | bl
             },
             0x2000..0x3fff => {
-                let bh = (self.ram[addr as usize] << 8) as u16;
-                let bl = self.ram[(addr + 1) as usize] as u16;
+                let n_addr = addr - 0x2000;
+                let bl = (self.ram[n_addr as usize]) as u16;
+                let bh = self.ram[(n_addr + 1) as usize] as u16;
                 (bh << 8) | bl
             },
             _ => panic!("out of memory")
@@ -39,7 +43,26 @@ impl Memory {
     pub fn write_byte(&mut self, addr: u16, value: u8) {
         match addr {
             0x0000..=0x1fff => self.rom[addr as usize] = value,
-            0x2000..0x3fff => self.ram[addr as usize] = value,
+            0x2000..0x3fff => {
+                let n_addr = addr - 0x2000;
+                self.ram[n_addr as usize] = value
+            },
+            _ => panic!("out of memory: {:X}", addr)
+        }
+    }
+    pub fn write_word(&mut self, addr: u16, value: u16) {
+        let lb = (value >> 8) as u8;
+        let hb = (value & 0x00FF) as u8;
+        match addr {
+            0x0000..=0x1fff => {
+                self.rom[addr as usize] = lb;
+                self.rom[(addr + 1) as usize] = hb;
+            },
+            0x2000..0x3fff => {
+                let n_addr = addr - 0x2000;
+                self.ram[n_addr as usize] = lb;
+                self.ram[(n_addr + 1) as usize] = hb;
+            },
             _ => panic!("out of memory")
         }
     }
