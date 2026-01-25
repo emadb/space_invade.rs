@@ -9,7 +9,7 @@ use std::fs;
 
 pub fn run(rom_file: &str) {
     let rom_data = fs::read(rom_file).unwrap();
-    let mut memory = Memory::init(rom_data[0..8000].try_into().unwrap());
+    let mut memory = Memory::init(rom_data[0..0x2000].try_into().unwrap());
 
     let mut cpu = Cpu::new();
     loop {

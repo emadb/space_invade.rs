@@ -1,6 +1,7 @@
 use crate::memory::Memory;
 use std::fmt;
 
+const ZERO: u8 = 0b00000000;
 const FLAG_SIGN: u8 = 0b10000000;
 const FLAG_ZERO: u8 = 0b01000000;
 const FLAG_AUX_CARRY: u8 = 0b00010000;
@@ -16,8 +17,12 @@ impl Flags {
         self.0 & FLAG_ZERO != 0
     }
 
-    fn get_carry(&self) -> bool {
-        self.0 & FLAG_CARRY != 0
+    fn get_carry(&self, v1: u8, v2: u8) -> bool {
+        v1 < v2
+    }
+
+    fn get_half_carry(&self, v1: u8, v2: u8) -> bool {
+        (v1 & 0x0F) < (v2 & 0x0F)
     }
 
     // S - Sign Flag
@@ -30,36 +35,36 @@ impl Flags {
     // C - Carry Flag
     pub fn set(&mut self, value: u8, half_carry: Option<bool>, carry: Option<bool>) {
         let s = (value & 0x80) != 0;
-        let z = value == 0; // Fixed: was checking & 0xFF which is always true for u8
-        let p = value.count_ones() % 2 == 0; // Fixed: use modulo instead of is_multiple_of
+        let z = value == 0;
+        let p = value.count_ones() % 2 == 0;
 
-        let bs = if s { 0b10000000 } else { 0b00000000 };
-        let bz = if z { FLAG_ZERO } else { 0b00000000 };
-        let b0 = 0b00000000;
-        let b1 = 0b00000000;
-        let bp = if p { 0b00000100 } else { 0b00000000 };
+        let bs = if s { FLAG_SIGN } else { ZERO };
+        let bz = if z { FLAG_ZERO } else { ZERO };
+        let b0 = ZERO;
+        let b1 = ZERO;
+        let bp = if p { FLAG_PARITY } else { ZERO };
         let b2 = 0b00000010;
 
         let ba = match half_carry {
             Some(h) => {
                 if h {
-                    0b00010000
+                    FLAG_AUX_CARRY
                 } else {
-                    0b00000000
+                    ZERO
                 }
             }
-            None => self.0 & 0b00010000,
+            None => self.0 & FLAG_AUX_CARRY,
         };
 
         let bc = match carry {
             Some(c) => {
                 if c {
-                    0b00000001
+                    FLAG_CARRY
                 } else {
-                    0b00000000
+                    ZERO
                 }
             }
-            None => self.0 & 0b00000001,
+            None => self.0 & FLAG_CARRY,
         };
 
         self.0 = bs | bz | b0 | ba | b1 | bp | b2 | bc;
@@ -164,11 +169,14 @@ impl Cpu {
             0x23 => self.inx_h(memory),
             0x31 => self.lxi_sp(memory),
             0x32 => self.sta(memory),
+            0x36 => self.mvi_m(memory),
             0x77 => self.mov_ma(memory),
+            0x7C => self.mov_ah(memory),
             0xC2 => self.jnz(memory),
             0xC3 => self.jmp(memory),
             0xC9 => self.ret(memory),
             0xCD => self.call(memory),
+            0xFE => self.cpi(memory),
 
             op => panic!("Unknown opcode: {:#2X}", op),
         };
@@ -186,7 +194,7 @@ impl Cpu {
 
     fn lxi_d(&mut self, mem: &Memory) -> Cycles {
         let w = self.fetch_word(mem);
-        set_16(&mut self.d, &mut self.e, w); // Fixed: was using self.c instead of self.e
+        set_16(&mut self.d, &mut self.e, w);
         Cycles(10)
     }
 
@@ -227,15 +235,15 @@ impl Cpu {
     }
 
     fn inr_b(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.b & 0x0F) == 0x0F; // AC set if carry from bit 3 to 4
-        let new_value = self.b.wrapping_add(1); // Fixed: was wrapping_sub, should be add for INR
+        let hc = (self.b & 0x0F) == 0x0F; // Half-carry on overflow from bit 3
+        let new_value = self.b.wrapping_add(1);
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
         Cycles(5)
     }
 
     fn dcr_b(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.b & 0x0F) == 0x00; // Fixed: AC set if borrow from bit 4
+        let hc = (self.b & 0x0F) == 0x00; // Half-carry on borrow from bit 4
         let new_value = self.b.wrapping_sub(1);
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
@@ -256,7 +264,7 @@ impl Cpu {
     }
 
     fn ldax_d(&mut self, mem: &Memory) -> Cycles {
-        let addr = ((self.d as u16) << 8) | (self.e as u16);
+        let addr = get_16(self.d, self.e);
         self.a = mem.read_byte(addr);
         Cycles(7)
     }
@@ -268,9 +276,21 @@ impl Cpu {
     }
 
     fn mov_ma(&mut self, mem: &mut Memory) -> Cycles {
-        let addr = ((self.h as u16) << 8) | (self.l as u16);
+        let addr = get_16(self.h, self.l);
         mem.write_byte(addr, self.a);
         Cycles(7)
+    }
+
+    fn mov_ah(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.h;
+        Cycles(5)
+    }
+
+    fn mvi_m(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = self.fetch_byte(mem);
+        mem.write_byte(addr, value);
+        Cycles(10)
     }
 
     fn jnz(&mut self, mem: &mut Memory) -> Cycles {
@@ -290,7 +310,6 @@ impl Cpu {
     fn ret(&mut self, mem: &mut Memory) -> Cycles {
         let addr = mem.read_word(self.sp); // Fixed: read before incrementing SP
         self.sp += 2;
-        println!("ret pc={:X} sp={:X} addr={:X}", self.pc, self.sp, addr);
         self.pc = addr;
         Cycles(10)
     }
@@ -303,10 +322,20 @@ impl Cpu {
 
         mem.write_byte(self.sp - 1, h);
         mem.write_byte(self.sp - 2, l);
-        println!("call pc={:X} sp={:X} addr={:X}", self.pc, self.sp, addr);
         self.sp -= 2;
         self.pc = addr;
         Cycles(17)
+    }
+
+    fn cpi(&mut self, mem: &mut Memory) -> Cycles {
+        let value = self.fetch_byte(mem);
+        println!("CPI: A={:02X} compare with {:02X}", self.a, value); // Debug output
+        let res = self.a.wrapping_sub(value);
+        let hc = self.flags.get_half_carry(self.a, value);
+        let c = self.flags.get_carry(self.a, value);
+
+        self.flags.set(res, Some(hc), Some(c));
+        Cycles(7)
     }
 }
 
