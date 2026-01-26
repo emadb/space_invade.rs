@@ -26,7 +26,7 @@ impl Memory {
                  self.vram[n_addr as usize]
              }
 
-            _ => panic!("out of memory"),
+            a => panic!("out of memory: {:X} ", a),
         }
     }
 
