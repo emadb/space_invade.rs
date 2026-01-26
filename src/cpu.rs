@@ -188,6 +188,7 @@ impl Cpu {
             0x31 => self.lxi_sp(memory),
             0x32 => self.sta(memory),
             0x36 => self.mvi_m(memory),
+            0x5E => self.mov_em(memory),
             0x6F => self.mov_la(memory),
             0x77 => self.mov_ma(memory),
             0x7C => self.mov_ah(memory),
@@ -368,6 +369,14 @@ impl Cpu {
         mem.write_byte(addr, self.a);
         Cycles(7)
     }
+
+    fn mov_em(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.e = value;
+        Cycles(7)
+    }
+
 
     fn mov_la(&mut self, _mem: &mut Memory) -> Cycles {
         self.l = self.a;
