@@ -21,6 +21,10 @@ impl Flags {
         self.0 & FLAG_PARITY != 0
     }
 
+    fn is_sign(&self) -> bool {
+        self.0 & FLAG_SIGN != 0
+    }
+
     fn get_carry(&self, v1: u8, v2: u8) -> bool {
         v1 < v2
     }
@@ -79,8 +83,14 @@ impl Flags {
     }
 }
 
+enum Interrupt {
+    Enabled,
+    Disabled,
+}
+
 pub struct Cpu {
     debug_counter: u64,
+    ei: Interrupt,
     a: u8,
     b: u8,
     c: u8,
@@ -127,6 +137,7 @@ impl Cpu {
     pub fn new() -> Self {
         Cpu {
             debug_counter: 0,
+            ei: Interrupt::Disabled,
             a: 0,
             b: 0,
             c: 0,
@@ -174,6 +185,7 @@ impl Cpu {
             0x09 => self.dad_b(memory),
             0x0D => self.dcr_c(memory),
             0x0E => self.mvi_c(memory),
+            0x0F => self.rrc(memory),
             0x11 => self.lxi_d(memory),
             0x13 => self.inx_d(memory),
             0x19 => self.dad_d(memory),
@@ -188,22 +200,39 @@ impl Cpu {
             0x31 => self.lxi_sp(memory),
             0x32 => self.sta(memory),
             0x36 => self.mvi_m(memory),
+            0x3A => self.lda(memory),
+            0x3E => self.mvi_a(memory),
+            0x56 => self.mov_dm(memory),
             0x5E => self.mov_em(memory),
+            0x66 => self.mov_hm(memory),
             0x6F => self.mov_la(memory),
             0x77 => self.mov_ma(memory),
+            0x7A => self.mov_ad(memory),
+            0x7B => self.mov_ae(memory),
             0x7C => self.mov_ah(memory),
+            0x7E => self.mov_am(memory),
+            0xA7 => self.ana_a(memory),
+            0xAF => self.xra(memory),
             0xC1 => self.pop_b(memory),
             0xC2 => self.jnz(memory),
             0xC3 => self.jmp(memory),
             0xC5 => self.push_b(memory),
+            0xC6 => self.adi(memory),
             0xC9 => self.ret(memory),
+            0xCA => self.jz(memory),
             0xCD => self.call(memory),
             0xD1 => self.pop_d(memory),
             0xD3 => self.out(memory, bus),
             0xD5 => self.push_d(memory),
+            0xE0 => self.rpo(memory),
             0xE1 => self.pop_h(memory),
             0xE5 => self.push_h(memory),
+            0xE6 => self.ani(memory),
+            0xF1 => self.pop_psw(memory),
+            0xF5 => self.push_psw(memory),
             0xEB => self.xcgh(memory),
+            0xF0 => self.rp(memory),
+            0xFB => self.ei(memory),
             0xFE => self.cpi(memory),
 
             op => panic!("Unknown opcode: {:#2X}", op),
@@ -211,6 +240,33 @@ impl Cpu {
         cycles
     }
     fn no_op(&self, _mem: &Memory) -> Cycles {
+        Cycles(4)
+    }
+
+    fn ani(&mut self, mem: &Memory) -> Cycles {
+        let value = self.fetch_byte(mem);
+        self.a = self.a & value;
+        self.flags.set(self.a, Some(false), Some(false));
+        Cycles(7)
+    }
+
+    fn ana_a(&mut self, _mem: &Memory) -> Cycles {
+        // self.a = self.a & self.a;
+        self.flags.set(self.a, Some(false), Some(false));
+        Cycles(4)
+    }
+
+    fn adi(&mut self, mem: &Memory) -> Cycles {
+        let value = self.fetch_byte(mem);
+        let (res, carry) = self.a.overflowing_add(value);
+        let hc = (self.a & 0x0F) + (value & 0x0F) > 0x0F;
+        self.flags.set(res, Some(hc), Some(carry));
+        self.a = res;
+        Cycles(7)
+    }
+
+    fn ei(&mut self, _mem: &Memory) -> Cycles {
+        self.ei = Interrupt::Enabled;
         Cycles(4)
     }
 
@@ -285,7 +341,7 @@ impl Cpu {
     }
 
     fn dcr_b(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.b & 0x0F) == 0x00;
+        let hc = (self.b & 0x0F) != 0x00;
         let new_value = self.b.wrapping_sub(1);
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
@@ -293,13 +349,12 @@ impl Cpu {
     }
 
     fn dcr_c(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.c & 0x0F) == 0x00;
+        let hc = (self.c & 0x0F) != 0x00;
         let new_value = self.c.wrapping_sub(1);
         self.flags.set(new_value, Some(hc), None);
         self.c = new_value;
         Cycles(5)
     }
-
 
     fn dad_h(&mut self, _mem: &mut Memory) -> Cycles {
         let value = get_16(self.h, self.l);
@@ -339,6 +394,12 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn mvi_a(&mut self, mem: &mut Memory) -> Cycles {
+        let value = self.fetch_byte(mem);
+        self.a = value;
+        Cycles(7)
+    }
+
     fn mvi_c(&mut self, mem: &mut Memory) -> Cycles {
         let value = self.fetch_byte(mem);
         self.c = value;
@@ -358,6 +419,12 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn lda(&mut self, mem: &Memory) -> Cycles {
+        let addr = self.fetch_word(mem);
+        self.a = mem.read_byte(addr);
+        Cycles(16)
+    }
+
     fn sta(&mut self, mem: &mut Memory) -> Cycles {
         let addr = self.fetch_word(mem);
         mem.write_byte(addr, self.a);
@@ -370,6 +437,20 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn mov_am(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.a = value;
+        Cycles(7)
+    }
+
+    fn mov_dm(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.d = value;
+        Cycles(7)
+    }
+
     fn mov_em(&mut self, mem: &mut Memory) -> Cycles {
         let addr = get_16(self.h, self.l);
         let value = mem.read_byte(addr);
@@ -377,9 +458,25 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn mov_hm(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.h = value;
+        Cycles(7)
+    }
+
+    fn mov_ad(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.d;
+        Cycles(5)
+    }
 
     fn mov_la(&mut self, _mem: &mut Memory) -> Cycles {
         self.l = self.a;
+        Cycles(5)
+    }
+
+    fn mov_ae(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.e;
         Cycles(5)
     }
 
@@ -416,6 +513,14 @@ impl Cpu {
         Cycles(10)
     }
 
+    fn jz(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = self.fetch_word(mem);
+        if self.flags.is_zero() {
+            self.pc = addr;
+        }
+        Cycles(10)
+    }
+
     fn jmp(&mut self, mem: &mut Memory) -> Cycles {
         let value = self.fetch_word(mem);
         self.pc = value;
@@ -443,6 +548,13 @@ impl Cpu {
         Cycles(11)
     }
 
+    fn push_psw(&mut self, mem: &mut Memory) -> Cycles {
+        mem.write_byte(self.sp - 1, self.a);
+        mem.write_byte(self.sp - 2, self.flags.0);
+        self.sp = self.sp.wrapping_sub(2);
+        Cycles(11)
+    }
+
     fn pop_b(&mut self, mem: &mut Memory) -> Cycles {
         self.c = mem.read_byte(self.sp);
         self.b = mem.read_byte(self.sp + 1);
@@ -457,10 +569,16 @@ impl Cpu {
         Cycles(10)
     }
 
-
     fn pop_h(&mut self, mem: &mut Memory) -> Cycles {
         self.l = mem.read_byte(self.sp);
         self.h = mem.read_byte(self.sp + 1);
+        self.sp = self.sp.wrapping_add(2);
+        Cycles(10)
+    }
+
+    fn pop_psw(&mut self, mem: &mut Memory) -> Cycles {
+        self.flags.0 = mem.read_byte(self.sp);
+        self.a = mem.read_byte(self.sp + 1);
         self.sp = self.sp.wrapping_add(2);
         Cycles(10)
     }
@@ -493,6 +611,32 @@ impl Cpu {
 
         self.flags.set(res, Some(hc), Some(c));
         Cycles(7)
+    }
+
+
+
+    fn rrc(&mut self, _mem: &mut Memory) -> Cycles {
+        let carry = self.a & 0x01;
+        self.a = (self.a >> 1) | (carry << 7);
+        self.flags.set_carry(carry != 0);
+        Cycles(4)
+    }
+
+    fn xra(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.a ^ self.a;
+
+        self.flags.set(self.a, Some(false), Some(false));
+        Cycles(4)
+    }
+
+    fn rp(&mut self, mem: &mut Memory) -> Cycles {
+        if !self.flags.is_sign() {
+            let addr = mem.read_word(self.sp);
+            self.sp += 2;
+            self.pc = addr;
+            return Cycles(11);
+        }
+        return Cycles(5);
     }
 
     fn rpo(&mut self, mem: &mut Memory) -> Cycles {
