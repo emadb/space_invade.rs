@@ -116,7 +116,7 @@ impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Cpu Registers: af={:X}{:X} bc={:X}{:X} de={:X}{:X} hl={:X}{:X} pc: {:#4X} sp: {:X} flags: {:b} cycles: {}",
+            "af={:02X}{:02X} bc={:02X}{:02X} de={:02X}{:02X} hl={:02X}{:02X} pc:{:04X} sp:{:04X} Z:{} C:{}",
             self.a,
             self.flags.0,
             self.b,
@@ -127,8 +127,12 @@ impl fmt::Debug for Cpu {
             self.l,
             self.pc,
             self.sp,
-            self.flags.0,
-            self.cycles
+            if self.flags.is_zero() { "1" } else { "0" },
+            if self.flags.0 & FLAG_CARRY != 0 {
+                "1"
+            } else {
+                "0"
+            }
         )
     }
 }
@@ -165,9 +169,9 @@ impl Cpu {
         ((h_addr as u16) << 8) | (l_addr as u16)
     }
 
-    pub fn run(&mut self, memory: &mut Memory, bus: &mut Bus) {
+    pub fn run_step(&mut self, memory: &mut Memory, bus: &mut Bus) {
         let opcode = self.fetch_byte(memory);
-        println!("{} - OP: {:#4X} - {:?}", self.debug_counter, opcode, self);
+        // println!("{} - OP: {:#4X} - {:?}", self.debug_counter, opcode, self);
         let cy = self.execute_instruction(opcode, memory, bus);
         self.cycles += cy.0 as u64;
     }
@@ -325,32 +329,32 @@ impl Cpu {
     }
 
     fn inr_b(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.b & 0x0F) == 0x0F;
         let new_value = self.b.wrapping_add(1);
+        let hc = (new_value & 0x0F) == 0;
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
         Cycles(5)
     }
 
     fn inr_e(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.e & 0x0F) == 0x0F;
         let new_value = self.e.wrapping_add(1);
+        let hc = (new_value & 0x0F) == 0;
         self.flags.set(new_value, Some(hc), None);
         self.e = new_value;
         Cycles(5)
     }
 
     fn dcr_b(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.b & 0x0F) != 0x00;
         let new_value = self.b.wrapping_sub(1);
+        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
         Cycles(5)
     }
 
     fn dcr_c(&mut self, _mem: &mut Memory) -> Cycles {
-        let hc = (self.c & 0x0F) != 0x00;
         let new_value = self.c.wrapping_sub(1);
+        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         self.c = new_value;
         Cycles(5)
@@ -422,7 +426,7 @@ impl Cpu {
     fn lda(&mut self, mem: &Memory) -> Cycles {
         let addr = self.fetch_word(mem);
         self.a = mem.read_byte(addr);
-        Cycles(16)
+        Cycles(13)
     }
 
     fn sta(&mut self, mem: &mut Memory) -> Cycles {
@@ -495,7 +499,7 @@ impl Cpu {
         self.d = temp_h;
         self.e = temp_l;
 
-        Cycles(5)
+        Cycles(4)
     }
 
     fn mvi_m(&mut self, mem: &mut Memory) -> Cycles {
@@ -605,15 +609,13 @@ impl Cpu {
 
     fn cpi(&mut self, mem: &mut Memory) -> Cycles {
         let value = self.fetch_byte(mem);
-        let res = self.a.wrapping_sub(value);
-        let hc = self.flags.get_half_carry(self.a, value);
-        let c = self.flags.get_carry(self.a, value);
+        let result = (self.a as u16).wrapping_sub(value as u16);
+        let c = ((result >> 8) & 0x1) != 0;
+        let hc = (!(self.a ^ ((result & 0xFF) as u8) ^ value) & 0x10) != 0;
 
-        self.flags.set(res, Some(hc), Some(c));
+        self.flags.set((result & 0xFF) as u8, Some(hc), Some(c));
         Cycles(7)
     }
-
-
 
     fn rrc(&mut self, _mem: &mut Memory) -> Cycles {
         let carry = self.a & 0x01;
