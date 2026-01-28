@@ -1,6 +1,6 @@
 
 use ggez::{Context, GameResult, graphics::{self, Color}};
-use crate::{bus::Bus, cpu::Cpu, memory::{Memory}};
+use crate::{bus::Bus, cpu::cpu::Cpu, memory::{Memory}};
 
 pub struct I8080 {
     memory: Memory,
@@ -21,11 +21,19 @@ impl I8080 {
         self.memory.init(rom_data[0..0x2000].try_into().unwrap());
     }
 
+    const CYCLES_PER_FRAME:u64 = 4_000_000 / 60;
+
     pub fn update(&mut self) {
         // Run ~33000 cycles per frame (2MHz CPU at 60fps)
-        for _ in 0..16500 {
+        for _ in 0..16_667 {
             self.cpu.run_step(&mut self.memory, &mut self.bus);
         }
+        self.cpu.send_interrupt(0xCF);
+
+        for _ in 0..16_667 {
+            self.cpu.run_step(&mut self.memory, &mut self.bus);
+        }
+        self.cpu.send_interrupt(0xD7);
     }
 }
 
