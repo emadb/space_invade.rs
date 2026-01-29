@@ -21,14 +21,17 @@ impl Memory {
     }
 
     pub fn read_byte(&self, addr: u16) -> u8 {
-        match addr {
-            0x0000..=0x1fff => self.rom[addr as usize],
+        // Space Invaders hardware mirrors every 16KB (0x4000)
+        // across the entire 64KB range.
+        let mirrored_addr = addr % 0x4000;
+        match mirrored_addr {
+            0x0000..=0x1fff => self.rom[mirrored_addr as usize],
             0x2000..=0x23FF => {
-                let n_addr = addr - 0x2000;
+                let n_addr = mirrored_addr - 0x2000;
                 self.ram[n_addr as usize]
             }
             0x2400..=0x3FFF => {
-                let n_addr = addr - 0x2400;
+                let n_addr = mirrored_addr - 0x2400;
                 self.vram[n_addr as usize]
             }
 
@@ -36,62 +39,31 @@ impl Memory {
         }
     }
 
-    pub fn read_word(&self, addr: u16) -> u16 {
-        match addr {
-            0x0000..=0x1fff => {
-                let bl = (self.rom[addr as usize]) as u16;
-                let bh = self.rom[(addr + 1) as usize] as u16;
-                (bh << 8) | bl
-            }
-            0x2000..=0x23FF => {
-                let n_addr = addr - 0x2000;
-                let bl = (self.ram[n_addr as usize]) as u16;
-                let bh = self.ram[(n_addr + 1) as usize] as u16;
-                (bh << 8) | bl
-            }
-            0x2400..=0x3FFF => {
-                let n_addr = addr - 0x2400;
-                let bl = (self.vram[n_addr as usize]) as u16;
-                let bh = self.vram[(n_addr + 1) as usize] as u16;
-                (bh << 8) | bl
-            }
-            _ => panic!("out of memory"),
-        }
-    }
-
     pub fn write_byte(&mut self, addr: u16, value: u8) {
-        match addr {
-            0x0000..=0x1fff => self.rom[addr as usize] = value,
+        let mirrored_addr = addr % 0x4000;
+        match mirrored_addr {
+            0x0000..=0x1fff => {/* ROM is read-only */ },
             0x2000..=0x23FF => {
-                let n_addr = addr - 0x2000;
+                let n_addr = mirrored_addr - 0x2000;
                 self.ram[n_addr as usize] = value
             }
             0x2400..=0x3FFF => {
-                let n_addr = addr - 0x2400;
+                let n_addr = mirrored_addr - 0x2400;
                 self.vram[n_addr as usize] = value
             }
             _ => panic!("out of memory: {:X}", addr),
         }
     }
+
+
+    pub fn read_word(&self, addr: u16) -> u16 {
+        let l = self.read_byte(addr) as u16;
+        let h = self.read_byte(addr.wrapping_add(1)) as u16;
+        (h << 8) | l
+    }
+
     pub fn write_word(&mut self, addr: u16, value: u16) {
-        let lb = (value & 0x00FF) as u8;
-        let hb = (value >> 8) as u8;
-        match addr {
-            0x0000..=0x1fff => {
-                self.rom[addr as usize] = lb;
-                self.rom[(addr + 1) as usize] = hb;
-            }
-            0x2000..=0x23FF => {
-                let n_addr = addr - 0x2000;
-                self.ram[n_addr as usize] = lb;
-                self.ram[(n_addr + 1) as usize] = hb;
-            }
-            0x2400..=0x3FFF => {
-                let n_addr = addr - 0x2400;
-                self.vram[n_addr as usize] = lb;
-                self.vram[(n_addr + 1) as usize] = hb;
-            }
-            _ => panic!("out of memory"),
-        }
+        self.write_byte(addr, (value & 0xFF) as u8);
+        self.write_byte(addr.wrapping_add(1), (value >> 8) as u8);
     }
 }
