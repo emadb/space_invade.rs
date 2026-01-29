@@ -1,5 +1,5 @@
 
-use ggez::{Context, GameResult, graphics::{self, Color}};
+use ggez::{Context, GameResult, graphics::{self, Color}, input::keyboard::KeyCode};
 use crate::{bus::Bus, cpu::cpu::Cpu, memory::{Memory}};
 
 pub struct I8080 {
@@ -12,7 +12,7 @@ impl I8080 {
     pub fn new() -> Self {
         Self {
             memory: Memory::new(),
-            bus: Bus {},
+            bus: Bus::init(),
             cpu: Cpu::new(),
         }
     }
@@ -35,19 +35,37 @@ impl I8080 {
         }
         self.cpu.send_interrupt(0xD7);
     }
+
+    fn insert_coin(&mut self) {
+        self.bus.port_1 = self.bus.port_1 | 0x01;
+    }
+
+    fn player_1(&mut self) {
+        self.bus.port_1 = self.bus.port_1 | 0x02;
+    }
+
+    fn left(&mut self) {
+        self.bus.port_1 = self.bus.port_1 | 0x20;
+    }
+
+    fn right(&mut self) {
+        self.bus.port_1 = self.bus.port_1 | 0x40;
+    }
+    fn fire(&mut self) {
+        self.bus.port_1 = self.bus.port_1 | 0x10;
+    }
 }
 
 
 impl ggez::event::EventHandler for I8080 {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        // Update code here...
-        // if ctx
-        //     .keyboard
-        //     .is_logical_key_pressed(&Key::Character("a".into()))
-        // {
-        //     println!("The A key is pressed");
-        //     self.x += 10.0;
-        // }
+        let k_ctx = &ctx.keyboard;
+        if k_ctx.is_key_pressed(KeyCode::Key0) { self.insert_coin(); }
+        if k_ctx.is_key_pressed(KeyCode::Key1) { self.player_1(); }
+        if k_ctx.is_key_pressed(KeyCode::Key2) { /* player 2 */ }
+        if k_ctx.is_key_pressed(KeyCode::J) { self.left(); }
+        if k_ctx.is_key_pressed(KeyCode::L) { self.right(); }
+        if k_ctx.is_key_pressed(KeyCode::A) { self.fire(); }
 
         self.update();
 
