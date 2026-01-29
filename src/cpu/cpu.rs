@@ -126,6 +126,7 @@ impl Cpu {
             0x04 => self.inr_b(memory),
             0x05 => self.dcr_b(memory),
             0x06 => self.mvi_b(memory),
+            0x07 => self.rlc(memory),
             0x09 => self.dad_b(memory),
             0x0A => self.ldax_b(memory),
             0x0D => self.dcr_c(memory),
@@ -133,6 +134,7 @@ impl Cpu {
             0x0F => self.rrc(memory),
             0x11 => self.lxi_d(memory),
             0x13 => self.inx_d(memory),
+            0x16 => self.mvi_d(memory),
             0x19 => self.dad_d(memory),
             0x1A => self.ldax_d(memory),
             0x1B => self.dcx_d(memory),
@@ -161,6 +163,7 @@ impl Cpu {
             0x6F => self.mov_la(memory),
             0x67 => self.mov_ha(memory),
             0x77 => self.mov_ma(memory),
+            0x78 => self.mov_ab(memory),
             0x79 => self.mov_ac(memory),
             0x7A => self.mov_ad(memory),
             0x7B => self.mov_ae(memory),
@@ -176,6 +179,7 @@ impl Cpu {
             0xC1 => self.pop_b(memory),
             0xC2 => self.jnz(memory),
             0xC3 => self.jmp(memory),
+            0xC4 => self.cnz(memory),
             0xC5 => self.push_b(memory),
             0xC6 => self.adi(memory),
             0xC8 => self.rz(memory),
@@ -417,6 +421,12 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn mvi_d(&mut self, mem: &mut Memory) -> Cycles {
+        let value = self.fetch_byte(mem);
+        self.d = value;
+        Cycles(7)
+    }
+
     fn mvi_h(&mut self, mem: &mut Memory) -> Cycles {
         let value = self.fetch_byte(mem);
         self.h = value;
@@ -506,6 +516,11 @@ impl Cpu {
         let value = mem.read_byte(addr);
         self.h = value;
         Cycles(7)
+    }
+
+    fn mov_ab(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.b;
+        Cycles(5)
     }
 
     fn mov_ac(&mut self, _mem: &mut Memory) -> Cycles {
@@ -736,9 +751,34 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn cnz(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = self.fetch_word(mem);
+
+        if !self.flags.is_zero() {
+            let h = (self.pc >> 8) as u8;
+            let l = (self.pc & 0xFF) as u8;
+
+            mem.write_byte(self.sp - 1, h);
+            mem.write_byte(self.sp - 2, l);
+            self.sp -= 2;
+            self.pc = addr;
+
+            Cycles(17)
+        } else {
+            Cycles(11)
+        }
+    }
+
     fn rrc(&mut self, _mem: &mut Memory) -> Cycles {
         let carry = self.a & 0x01;
         self.a = (self.a >> 1) | (carry << 7);
+        self.flags.set_carry(carry != 0);
+        Cycles(4)
+    }
+
+    fn rlc(&mut self, _mem: &mut Memory) -> Cycles {
+        let carry = self.a & 0x80 >> 7;
+        self.a = (self.a << 1) | carry;
         self.flags.set_carry(carry != 0);
         Cycles(4)
     }
