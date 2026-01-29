@@ -4,7 +4,7 @@ use std::fmt;
 #[derive(PartialEq)]
 enum Interrupt {
     Enabled,
-    Disabled
+    Disabled,
 }
 
 struct Cycles(u8);
@@ -86,12 +86,12 @@ impl Cpu {
     }
 
     pub fn run_step(&mut self, memory: &mut Memory, bus: &mut Bus) {
+        self.process_interrupt(memory);
         let opcode = self.fetch_byte(memory);
         println!("OP: {:#4X} - {:?}", opcode, self);
         let cy = self.execute_instruction(opcode, memory, bus);
         self.cycles += cy.0 as u64;
     }
-
 
     pub fn send_interrupt(&mut self, int: u16) {
         if self.ei == Interrupt::Enabled {
@@ -100,24 +100,24 @@ impl Cpu {
     }
 
     fn process_interrupt(&mut self, mem: &mut Memory) {
-        if self.ei == Interrupt::Enabled && let Some(addr) = self.pending_int {
+        if self.ei == Interrupt::Enabled
+            && let Some(opcode) = self.pending_int
+        {
 
             // TOOD: create a fn (push the sp)
             let h = (self.pc >> 8) as u8;
             let l = (self.pc & 0xFF) as u8;
-            mem.write_byte(self.sp - 1, h);
-            mem.write_byte(self.sp - 2, l);
+            mem.write_byte(self.sp.wrapping_sub(1), h);
+            mem.write_byte(self.sp.wrapping_sub(2), l);
 
-            self.sp -= 2;
-            self.pc = addr & 0x0038;
+            self.sp = self.sp.wrapping_sub(2);
+            self.pc = opcode & 0x0038;
+            self.ei = Interrupt::Disabled;
             self.pending_int = None;
         }
     }
 
     fn execute_instruction(&mut self, opcode: u8, memory: &mut Memory, bus: &mut Bus) -> Cycles {
-
-        self.process_interrupt(memory);
-
         let cycles = match opcode {
             0x00 => self.no_op(memory),
             0x01 => self.lxi_b(memory),
@@ -272,7 +272,7 @@ impl Cpu {
             // 0x97 => self.(memory),
             // 0x98 => self.(memory),
             // 0x99 => self.(memory),
-            // 0x9A => self.(memory),
+            // 0x9A => self.(memory), /// TOODOOOO
             // 0x9B => self.(memory),
             // 0x9C => self.(memory),
             // 0x9D => self.(memory),
@@ -298,7 +298,7 @@ impl Cpu {
             // 0xB1 => self.(memory),
             // 0xB2 => self.(memory),
             // 0xB3 => self.(memory),
-            // 0xB4 => self.(memory),
+            0xB4 => self.ora_h(memory),
             // 0xB5 => self.(memory),
             0xB6 => self.add_m(memory),
             // 0xB7 => self.(memory),
@@ -375,7 +375,6 @@ impl Cpu {
             // 0xFD => self.(memory),
             0xFE => self.cpi(memory),
             // 0xFF => self.(memory),
-
             op => panic!("Unknown opcode: {:#2X}", op),
         };
         cycles
@@ -393,11 +392,13 @@ impl Cpu {
         Cycles(16)
     }
 
-    fn xthl(&mut self, mem: &Memory) -> Cycles {
-        let n_l = mem.read_byte(self.sp);
-        let n_h = mem.read_byte(self.sp.wrapping_add(1));
-        self.l = n_l;
-        self.h = n_h;
+    fn xthl(&mut self, mem: &mut Memory) -> Cycles {
+        let old_h = self.h;
+        let old_l = self.l;
+        self.l = mem.read_byte(self.sp);
+        self.h = mem.read_byte(self.sp.wrapping_add(1));
+        mem.write_byte(self.sp, old_l);
+        mem.write_byte(self.sp.wrapping_add(1), old_h);
         Cycles(18)
     }
 
@@ -409,19 +410,19 @@ impl Cpu {
     }
 
     fn pchl(&mut self, _mem: &Memory) -> Cycles {
-        self.pc =  get_16(self.h, self.l);
+        self.pc = get_16(self.h, self.l);
         Cycles(5)
     }
 
     fn sl(&mut self, _mem: &Memory) -> Cycles {
-        self.pc =  get_16(self.h, self.l);
+        self.pc = get_16(self.h, self.l);
         Cycles(5)
     }
 
     fn ani(&mut self, mem: &Memory) -> Cycles {
         let value = self.fetch_byte(mem);
+        let hc = ((self.a | value) & 0x08) != 0;
         self.a = self.a & value;
-        let hc = 0b00001000 & self.a != 0;
         self.flags.set(self.a, Some(hc), Some(false));
         Cycles(7)
     }
@@ -435,15 +436,20 @@ impl Cpu {
 
     fn ana_a(&mut self, _mem: &Memory) -> Cycles {
         // self.a = self.a & self.a;
-        let hc = 0b00001000 & self.a != 0;
+        let hc = (self.a & 0x08) != 0;
         self.flags.set(self.a, Some(hc), Some(false));
         Cycles(4)
     }
 
     fn ora_b(&mut self, _mem: &Memory) -> Cycles {
         self.a = self.a | self.b;
-        let hc = 0b00001000 & self.a != 0;
-        self.flags.set(self.a, Some(hc), Some(false));
+        self.flags.set(self.a, Some(false), Some(false));
+        Cycles(4)
+    }
+
+    fn ora_h(&mut self, _mem: &Memory) -> Cycles {
+        self.a = self.a | self.h;
+        self.flags.set(self.a, Some(false), Some(false));
         Cycles(4)
     }
 
@@ -479,6 +485,7 @@ impl Cpu {
     fn inp(&mut self, mem: &Memory, bus: &mut Bus) -> Cycles {
         let port = self.fetch_byte(mem);
         self.a = bus.read_port(port);
+        println!("READING PORT {} => {}", port, self.a);
         Cycles(10)
     }
 
@@ -537,48 +544,48 @@ impl Cpu {
     }
 
     fn inr_a(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.a & 0x0F) == 0x0F;
         let new_value = self.a.wrapping_add(1);
-        let hc = (new_value & 0x0F) == 0;
         self.flags.set(new_value, Some(hc), None);
         self.a = new_value;
         Cycles(5)
     }
 
     fn inr_b(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.b & 0x0F) == 0x0F;
         let new_value = self.b.wrapping_add(1);
-        let hc = (new_value & 0x0F) == 0;
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
         Cycles(5)
     }
 
     fn inr_e(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.e & 0x0F) == 0x0F;
         let new_value = self.e.wrapping_add(1);
-        let hc = (new_value & 0x0F) == 0;
         self.flags.set(new_value, Some(hc), None);
         self.e = new_value;
         Cycles(5)
     }
 
     fn dcr_a(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.a & 0x0F) == 0x00;
         let new_value = self.a.wrapping_sub(1);
-        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         self.a = new_value;
         Cycles(5)
     }
 
     fn dcr_b(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.b & 0x0F) == 0x00;
         let new_value = self.b.wrapping_sub(1);
-        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         self.b = new_value;
         Cycles(5)
     }
 
     fn dcr_c(&mut self, _mem: &mut Memory) -> Cycles {
+        let hc = (self.c & 0x0F) == 0x00;
         let new_value = self.c.wrapping_sub(1);
-        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         self.c = new_value;
         Cycles(5)
@@ -587,8 +594,8 @@ impl Cpu {
     fn dcr_m(&mut self, mem: &mut Memory) -> Cycles {
         let addr = get_16(self.h, self.l);
         let value = mem.read_byte(addr);
+        let hc = (value & 0x0F) == 0x00;
         let new_value = value.wrapping_sub(1);
-        let hc = (new_value & 0x0F) != 0x0F;
         self.flags.set(new_value, Some(hc), None);
         mem.write_byte(addr, new_value);
         Cycles(5)
@@ -725,7 +732,6 @@ impl Cpu {
         Cycles(7)
     }
 
-
     fn mov_dm(&mut self, mem: &mut Memory) -> Cycles {
         let addr = get_16(self.h, self.l);
         let value = mem.read_byte(addr);
@@ -764,7 +770,6 @@ impl Cpu {
         Cycles(5)
     }
 
-
     fn mov_ad(&mut self, _mem: &mut Memory) -> Cycles {
         self.a = self.d;
         Cycles(5)
@@ -776,7 +781,7 @@ impl Cpu {
     }
 
     fn mov_ba(&mut self, _mem: &mut Memory) -> Cycles {
-        self.a = self.l;
+        self.b = self.a;
         Cycles(5)
     }
 
@@ -1236,7 +1241,7 @@ impl Cpu {
     }
 
     fn rlc(&mut self, _mem: &mut Memory) -> Cycles {
-        let carry = self.a & 0x80 >> 7;
+        let carry = (self.a & 0x80) >> 7;
         self.a = (self.a << 1) | carry;
         self.flags.set_carry(carry != 0);
         Cycles(4)
@@ -1260,7 +1265,6 @@ impl Cpu {
             Cycles(5)
         }
     }
-
 
     fn xra_a(&mut self, _mem: &mut Memory) -> Cycles {
         self.a = self.a ^ self.a;
@@ -1351,4 +1355,3 @@ fn set_16(h: &mut u8, l: &mut u8, value: u16) {
 //         let high = self.fetch_byte(memory) as u16;
 //         (high << 8) | low
 //     }
-
