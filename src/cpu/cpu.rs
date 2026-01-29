@@ -129,39 +129,115 @@ impl Cpu {
             0x07 => self.rlc(memory),
             0x09 => self.dad_b(memory),
             0x0A => self.ldax_b(memory),
+            //0x0B => self.(memory),
+            //0x0C => self.(memory),
             0x0D => self.dcr_c(memory),
             0x0E => self.mvi_c(memory),
             0x0F => self.rrc(memory),
+            //0x10 => self.(memory),
             0x11 => self.lxi_d(memory),
+            //0x12 => self.(memory),
             0x13 => self.inx_d(memory),
+            // 0x14 => self.(memory),
+            // 0x15 => self.(memory),
             0x16 => self.mvi_d(memory),
+            // 0x17 => self.(memory),
+            // 0x18 => self.(memory),
             0x19 => self.dad_d(memory),
             0x1A => self.ldax_d(memory),
             0x1B => self.dcx_d(memory),
             0x1C => self.inr_e(memory),
+            // 0x1D => self.(memory),
+            // 0x1E => self.(memory),
+            // 0x1F => self.(memory),
             0x20 => self.no_op(memory),
             0x21 => self.lxi_h(memory),
+            // 0x22 => self.(memory),
             0x23 => self.inx_h(memory),
+            // 0x24 => self.(memory),
+            // 0x25 => self.(memory),
             0x26 => self.mvi_h(memory),
+            // 0x27 => self.(memory),
+            // 0x28 => self.(memory),
             0x29 => self.dad_h(memory),
+            // 0x2A => self.(memory),
+            // 0x2B => self.(memory),
+            // 0x2C => self.(memory),
+            // 0x2D => self.(memory),
             0x2E => self.mvi_l(memory),
+            // 0x2F => self.(memory),
+            // 0x30 => self.(memory),
             0x31 => self.lxi_sp(memory),
             0x32 => self.sta(memory),
+            // 0x33 => self.(memory),
+            // 0x34 => self.(memory),
             0x35 => self.dcr_m(memory),
             0x36 => self.mvi_m(memory),
             0x37 => self.stc(memory),
+            // 0x38 => self.(memory),
+            // 0x39 => self.(memory),
             0x3A => self.lda(memory),
+            // 0x3B => self.(memory),
+            // 0x3C => self.(memory),
             0x3D => self.dcr_a(memory),
             0x3E => self.mvi_a(memory),
+            // 0x3F => self.(memory),
+            0x40 => self.mov_bb(memory),
+            0x41 => self.mov_bc(memory),
+            0x42 => self.mov_bd(memory),
+            0x43 => self.mov_be(memory),
+            0x44 => self.mov_bh(memory),
+            0x45 => self.mov_bl(memory),
             0x46 => self.mov_bm(memory),
+            0x47 => self.mov_ba(memory),
+            0x48 => self.mov_cb(memory),
+            0x49 => self.mov_cc(memory),
+            0x4A => self.mov_cd(memory),
+            0x4B => self.mov_ce(memory),
+            0x4C => self.mov_ch(memory),
+            0x4D => self.mov_cl(memory),
+            0x4E => self.mov_cm(memory),
             0x4F => self.mov_ca(memory),
+            0x50 => self.mov_db(memory),
+            0x51 => self.mov_dc(memory),
+            0x52 => self.mov_dd(memory),
+            0x53 => self.mov_de(memory),
+            0x54 => self.mov_dh(memory),
+            0x55 => self.mov_dl(memory),
             0x56 => self.mov_dm(memory),
             0x57 => self.mov_da(memory),
+            0x58 => self.mov_eb(memory),
+            0x59 => self.mov_ec(memory),
+            0x5A => self.mov_ed(memory),
+            0x5B => self.mov_ee(memory),
+            0x5C => self.mov_eh(memory),
+            0x5D => self.mov_el(memory),
             0x5E => self.mov_em(memory),
             0x5F => self.mov_ea(memory),
+            0x60 => self.mov_hb(memory),
+            0x61 => self.mov_hc(memory),
+            0x62 => self.mov_hd(memory),
+            0x63 => self.mov_he(memory),
+            0x64 => self.mov_hh(memory),
+            0x65 => self.mov_hl(memory),
             0x66 => self.mov_hm(memory),
-            0x6F => self.mov_la(memory),
             0x67 => self.mov_ha(memory),
+            0x68 => self.mov_lb(memory),
+            0x69 => self.mov_lc(memory),
+            0x6A => self.mov_ld(memory),
+            0x6B => self.mov_le(memory),
+            0x6C => self.mov_lh(memory),
+            0x6D => self.mov_ll(memory),
+            0x6E => self.mov_lm(memory),
+            0x6F => self.mov_la(memory),
+
+            // 0x70 => self.(memory),
+            // 0x71 => self.(memory),
+            // 0x72 => self.(memory),
+            // 0x73 => self.(memory),
+            // 0x74 => self.(memory),
+            // 0x75 => self.(memory),
+            // 0x76 => self.(memory),
             0x77 => self.mov_ma(memory),
             0x78 => self.mov_ab(memory),
             0x79 => self.mov_ac(memory),
@@ -170,11 +246,71 @@ impl Cpu {
             0x7C => self.mov_ah(memory),
             0x7D => self.mov_al(memory),
             0x7E => self.mov_am(memory),
+            // 0x7F => self.(memory),
+            // 0x80 => self.(memory),
+            // 0x81 => self.(memory),
+            // 0x82 => self.(memory),
+            // 0x83 => self.(memory),
+            // 0x84 => self.(memory),
+            // 0x85 => self.(memory),
+            // 0x86 => self.(memory),
+            // 0x87 => self.(memory),
+            // 0x88 => self.(memory),
+            // 0x89 => self.(memory),
+            // 0x8A => self.(memory),
+            // 0x8B => self.(memory),
+            // 0x8C => self.(memory),
+            // 0x8D => self.(memory),
+            // 0x8E => self.(memory),
+            // 0x8F => self.(memory),
+            // 0x90 => self.(memory),
+            // 0x91 => self.(memory),
+            // 0x92 => self.(memory),
+            // 0x93 => self.(memory),
+            // 0x94 => self.(memory),
+            // 0x95 => self.(memory),
+            // 0x96 => self.(memory),
+            // 0x97 => self.(memory),
+            // 0x98 => self.(memory),
+            // 0x99 => self.(memory),
+            // 0x9A => self.(memory),
+            // 0x9B => self.(memory),
+            // 0x9C => self.(memory),
+            // 0x9D => self.(memory),
             0x9E => self.sbb_m(memory),
+            // 0x9F => self.(memory),
+            // 0xA0 => self.(memory),
+            // 0xA1 => self.(memory),
+            // 0xA2 => self.(memory),
+            // 0xA3 => self.(memory),
+            // 0xA4 => self.(memory),
+            // 0xA5 => self.(memory),
+            // 0xA6 => self.(memory),
             0xA7 => self.ana_a(memory),
+            // 0xA8 => self.(memory),
+            // 0xA9 => self.(memory),
+            // 0xAA => self.(memory),
+            // 0xAB => self.(memory),
+            // 0xAC => self.(memory),
+            // 0xAD => self.(memory),
+            // 0xAE => self.(memory),
             0xAF => self.xra(memory),
             0xB0 => self.ora_b(memory),
+            // 0xB1 => self.(memory),
+            // 0xB2 => self.(memory),
+            // 0xB3 => self.(memory),
+            // 0xB4 => self.(memory),
+            // 0xB5 => self.(memory),
             0xB6 => self.add_m(memory),
+            // 0xB7 => self.(memory),
+            // 0xB8 => self.(memory),
+            // 0xB9 => self.(memory),
+            // 0xBA => self.(memory),
+            // 0xBB => self.(memory),
+            // 0xBC => self.(memory),
+            // 0xBD => self.(memory),
+            // 0xBE => self.(memory),
+            // 0xBF => self.(memory),
             0xC0 => self.rnz(memory),
             0xC1 => self.pop_b(memory),
             0xC2 => self.jnz(memory),
@@ -182,30 +318,64 @@ impl Cpu {
             0xC4 => self.cnz(memory),
             0xC5 => self.push_b(memory),
             0xC6 => self.adi(memory),
+            // 0xC7 => self.(memory),
             0xC8 => self.rz(memory),
             0xC9 => self.ret(memory),
             0xCA => self.jz(memory),
+            // 0xCB => self.(memory),
+            // 0xCC => self.(memory),
             0xCD => self.call(memory),
+            // 0xCE => self.(memory),
+            // 0xCF => self.(memory),
             0xD0 => self.rnc(memory),
             0xD1 => self.pop_d(memory),
             0xD2 => self.jnc(memory),
             0xD3 => self.out(memory, bus),
+            // 0xD4 => self.(memory),
             0xD5 => self.push_d(memory),
             0xD6 => self.sui(memory),
+            // 0xD7 => self.(memory),
             0xD8 => self.rc(memory),
+            // 0xD9 => self.(memory),
             0xDA => self.jc(memory),
             0xDB => self.inp(memory, bus),
+            // 0xDC => self.(memory),
+            // 0xDD => self.(memory),
+            // 0xDE => self.(memory),
+            // 0xDF => self.(memory),
             0xE0 => self.rpo(memory),
             0xE1 => self.pop_h(memory),
+            // 0xE2 => self.(memory),
+            // 0xE3 => self.(memory),
+            // 0xE4 => self.(memory),
             0xE5 => self.push_h(memory),
             0xE6 => self.ani(memory),
+            // 0xE7 => self.(memory),
+            // 0xE8 => self.(memory),
+            // 0xE9 => self.(memory),
+            // 0xE0 => self.(memory),
+            // 0xEA => self.(memory),
+            0xEB => self.xcgh(memory),
+            // 0xEC => self.(memory),
+            // 0xED => self.(memory),
+            // 0xEE => self.(memory),
+            // 0xEF => self.(memory),
+            0xF0 => self.rp(memory),
             0xF1 => self.pop_psw(memory),
+            // 0xF2 => self.(memory),
+            // 0xF3 => self.(memory),
+            // 0xF4 => self.(memory),
             0xF5 => self.push_psw(memory),
             0xF6 => self.ori(memory),
-            0xEB => self.xcgh(memory),
-            0xF0 => self.rp(memory),
+            // 0xF7 => self.(memory),
+            // 0xF8 => self.(memory),
+            // 0xF9 => self.(memory),
+            // 0xFA => self.(memory),
             0xFB => self.ei(memory),
+            // 0xFC => self.(memory),
+            // 0xFD => self.(memory),
             0xFE => self.cpi(memory),
+            // 0xFF => self.(memory),
 
             op => panic!("Unknown opcode: {:#2X}", op),
         };
@@ -496,6 +666,13 @@ impl Cpu {
         Cycles(7)
     }
 
+    fn mov_cm(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.c = value;
+        Cycles(7)
+    }
+
 
     fn mov_dm(&mut self, mem: &mut Memory) -> Cycles {
         let addr = get_16(self.h, self.l);
@@ -515,6 +692,13 @@ impl Cpu {
         let addr = get_16(self.h, self.l);
         let value = mem.read_byte(addr);
         self.h = value;
+        Cycles(7)
+    }
+
+    fn mov_lm(&mut self, mem: &mut Memory) -> Cycles {
+        let addr = get_16(self.h, self.l);
+        let value = mem.read_byte(addr);
+        self.l = value;
         Cycles(7)
     }
 
@@ -539,13 +723,198 @@ impl Cpu {
         Cycles(5)
     }
 
+    fn mov_ba(&mut self, _mem: &mut Memory) -> Cycles {
+        self.a = self.l;
+        Cycles(5)
+    }
+
+    fn mov_bb(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.b;
+        Cycles(5)
+    }
+
+    fn mov_bc(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.c;
+        Cycles(5)
+    }
+
+    fn mov_bd(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.d;
+        Cycles(5)
+    }
+
+    fn mov_be(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.e;
+        Cycles(5)
+    }
+
+    fn mov_bh(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.h;
+        Cycles(5)
+    }
+
+    fn mov_bl(&mut self, _mem: &mut Memory) -> Cycles {
+        self.b = self.l;
+        Cycles(5)
+    }
+
     fn mov_ca(&mut self, _mem: &mut Memory) -> Cycles {
         self.c = self.a;
         Cycles(5)
     }
 
+    fn mov_cb(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.b;
+        Cycles(5)
+    }
+
+    fn mov_cc(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.c;
+        Cycles(5)
+    }
+
+    fn mov_cd(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.d;
+        Cycles(5)
+    }
+
+    fn mov_ce(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.e;
+        Cycles(5)
+    }
+
+    fn mov_ch(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.h;
+        Cycles(5)
+    }
+
+    fn mov_cl(&mut self, _mem: &mut Memory) -> Cycles {
+        self.c = self.l;
+        Cycles(5)
+    }
+
     fn mov_da(&mut self, _mem: &mut Memory) -> Cycles {
         self.d = self.a;
+        Cycles(5)
+    }
+
+    fn mov_db(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.b;
+        Cycles(5)
+    }
+
+    fn mov_dc(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.c;
+        Cycles(5)
+    }
+
+    fn mov_dd(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.d;
+        Cycles(5)
+    }
+
+    fn mov_de(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.e;
+        Cycles(5)
+    }
+
+    fn mov_dh(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.h;
+        Cycles(5)
+    }
+
+    fn mov_dl(&mut self, _mem: &mut Memory) -> Cycles {
+        self.d = self.l;
+        Cycles(5)
+    }
+
+    fn mov_eb(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.b;
+        Cycles(5)
+    }
+
+    fn mov_ec(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.c;
+        Cycles(5)
+    }
+
+    fn mov_ed(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.d;
+        Cycles(5)
+    }
+
+    fn mov_ee(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.e;
+        Cycles(5)
+    }
+
+    fn mov_eh(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.h;
+        Cycles(5)
+    }
+
+    fn mov_el(&mut self, _mem: &mut Memory) -> Cycles {
+        self.e = self.l;
+        Cycles(5)
+    }
+
+    fn mov_hb(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.b;
+        Cycles(5)
+    }
+
+    fn mov_hc(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.c;
+        Cycles(5)
+    }
+
+    fn mov_hd(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.d;
+        Cycles(5)
+    }
+
+    fn mov_he(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.e;
+        Cycles(5)
+    }
+
+    fn mov_hh(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.h;
+        Cycles(5)
+    }
+
+    fn mov_hl(&mut self, _mem: &mut Memory) -> Cycles {
+        self.h = self.l;
+        Cycles(5)
+    }
+
+    fn mov_lb(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.b;
+        Cycles(5)
+    }
+
+    fn mov_lc(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.c;
+        Cycles(5)
+    }
+
+    fn mov_ld(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.d;
+        Cycles(5)
+    }
+
+    fn mov_le(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.e;
+        Cycles(5)
+    }
+
+    fn mov_lh(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.h;
+        Cycles(5)
+    }
+
+    fn mov_ll(&mut self, _mem: &mut Memory) -> Cycles {
+        self.l = self.l;
         Cycles(5)
     }
 
