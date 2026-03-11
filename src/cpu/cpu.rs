@@ -3,7 +3,7 @@ use std::fmt;
 
 #[derive(PartialEq)]
 enum Interrupt {
-    Enabled,
+    Enabled(Option<u16>),
     Disabled,
 }
 
@@ -11,7 +11,6 @@ struct Cycles(u8);
 
 pub struct Cpu {
     ei: Interrupt,
-    pending_int: Option<u16>,
     a: u8,
     b: u8,
     c: u8,
@@ -47,7 +46,6 @@ impl Cpu {
     pub fn new() -> Self {
         Cpu {
             ei: Interrupt::Disabled,
-            pending_int: None,
             a: 0,
             b: 0,
             c: 0,
@@ -91,8 +89,9 @@ impl Cpu {
     }
 
     pub fn send_interrupt(&mut self, int: u16) {
-        if self.ei == Interrupt::Enabled {
-            self.pending_int = Some(int)
+
+        if let Interrupt::Enabled(_) = self.ei  {
+            self.ei = Interrupt::Enabled(Some(int))
         }
     }
 
@@ -106,14 +105,10 @@ impl Cpu {
     }
 
     fn process_interrupt(&mut self, mem: &mut Memory) {
-        if self.ei == Interrupt::Enabled
-            && let Some(opcode) = self.pending_int
-        {
+        if let Interrupt::Enabled(Some(opcode)) = self.ei {
             self.push_sp(mem);
-
             self.pc = opcode & 0x0038; // 0b00111000
             self.ei = Interrupt::Disabled;
-            self.pending_int = None;
             self.halt = false;
         }
     }
@@ -897,7 +892,7 @@ impl Cpu {
     }
 
     fn ei(&mut self, _mem: &Memory) -> Cycles {
-        self.ei = Interrupt::Enabled;
+        self.ei = Interrupt::Enabled(None);
         Cycles(4)
     }
 
