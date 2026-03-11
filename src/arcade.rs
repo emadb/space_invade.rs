@@ -5,14 +5,14 @@ use ggez::{
     input::keyboard::{KeyCode, KeyInput},
 };
 
-pub struct I8080 {
+pub struct Arcade {
     memory: Memory,
     bus: Bus,
     cpu: Cpu,
     pixels: InstanceArray,
 }
 
-impl I8080 {
+impl Arcade {
     pub fn new(ctx: &Context) -> Self {
         let image = graphics::Image::from_color(&ctx.gfx, 1, 1, Some(Color::WHITE));
         let pixels = graphics::InstanceArray::new(ctx, image);
@@ -52,7 +52,7 @@ impl I8080 {
 
 }
 
-impl ggez::event::EventHandler for I8080 {
+impl ggez::event::EventHandler for Arcade {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         self.update();
 

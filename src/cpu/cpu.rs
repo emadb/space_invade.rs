@@ -379,14 +379,14 @@ impl Cpu {
             0xF5 => self.push_psw(memory),
             0xF6 => self.ori(memory),
             // 0xF7 => self.rst_6(memory),
-            // 0xF8 => self.rm(memory),
+            0xF8 => self.rm(memory),
             // 0xF9 => self.sphl(memory),
             0xFA => self.jm(memory),
             0xFB => self.ei(memory),
             // 0xFC => self.cm(memory),
             0xFD => self.call(memory),
             0xFE => self.cpi(memory),
-            // 0xFF => self.rst_7(memory),
+            0xFF => self.rst_7(memory),
             op => panic!("Unknown opcode: {:#2X}", op),
         };
         cycles
@@ -488,7 +488,7 @@ impl Cpu {
         let (res, carry) = self.a.overflowing_sub(value);
         let hc = ((self.a & 0x0F) as i16 - (value & 0x0F) as i16) < 0;
         self.flags.set(res, Some(hc), Some(carry));
-        Cycles(4)
+        Cycles(7)
     }
 
     fn add_a(&mut self, _mem: &Memory) -> Cycles {
@@ -650,7 +650,7 @@ impl Cpu {
         self.a = res;
         self.flags.set(res, Some(hc), Some(wide_res > 0xFF));
 
-        Cycles(4)
+        Cycles(7)
     }
 
     fn sub_a(&mut self, _mem: &Memory) -> Cycles {
@@ -718,11 +718,12 @@ impl Cpu {
     fn sub_m(&mut self, mem: &Memory) -> Cycles {
         let addr = get_16(self.h, self.l);
         let value = mem.read_byte(addr);
+        let hc = (self.a & 0x0F) < (value & 0x0F);
         let (res, carry) = self.a.overflowing_sub(value);
-        self.flags.set(res, Some(true), Some(carry));
+        self.flags.set(res, Some(hc), Some(carry));
         self.a = res;
 
-        Cycles(4)
+        Cycles(7)
     }
 
     fn lhld(&mut self, mem: &Memory) -> Cycles {
@@ -834,7 +835,7 @@ impl Cpu {
         let hc = ((self.a | value) & 0x08) != 0;
         self.a = self.a & value;
         self.flags.set(self.a, Some(hc), Some(false));
-        Cycles(4)
+        Cycles(7)
     }
 
     fn ora_a(&mut self, _mem: &Memory) -> Cycles {
@@ -884,7 +885,7 @@ impl Cpu {
         let value = mem.read_byte(addr);
         self.a = self.a | value;
         self.flags.set(self.a, Some(false), Some(false));
-        Cycles(4)
+        Cycles(7)
     }
 
     fn adi(&mut self, mem: &Memory) -> Cycles {
@@ -1062,7 +1063,7 @@ impl Cpu {
         let new_value = value.wrapping_add(1);
         self.flags.set(new_value, Some(hc), None);
         mem.write_byte(addr, new_value);
-        Cycles(5)
+        Cycles(10)
     }
 
     fn dcr_a(&mut self, _mem: &mut Memory) -> Cycles {
@@ -1128,7 +1129,7 @@ impl Cpu {
         let new_value = value.wrapping_sub(1);
         self.flags.set(new_value, Some(hc), None);
         mem.write_byte(addr, new_value);
-        Cycles(5)
+        Cycles(10)
     }
 
     fn dad_h(&mut self, _mem: &mut Memory) -> Cycles {
@@ -1342,7 +1343,7 @@ impl Cpu {
 
     fn mov_aa(&mut self, mem: &mut Memory) -> Cycles {
         self.a = self.a;
-        Cycles(5)
+        Cycles(4)
     }
 
     fn mov_ab(&mut self, _mem: &mut Memory) -> Cycles {
@@ -1747,6 +1748,17 @@ impl Cpu {
         }
     }
 
+    fn rm(&mut self, mem: &mut Memory) -> Cycles {
+        if self.flags.is_sign() {
+            let addr = mem.read_word(self.sp);
+            self.sp = self.sp.wrapping_add(2);
+            self.pc = addr;
+            Cycles(11)
+        } else {
+            Cycles(10)
+        }
+    }
+
     fn call(&mut self, mem: &mut Memory) -> Cycles {
         let addr = self.fetch_word(mem);
         self.push_sp(mem);
@@ -1758,6 +1770,12 @@ impl Cpu {
     fn rst(&mut self, mem: &mut Memory) -> Cycles {
         self.push_sp(mem);
         self.pc = 0x00;
+        Cycles(11)
+    }
+
+    fn rst_7(&mut self, mem: &mut Memory) -> Cycles {
+        self.push_sp(mem);
+        self.pc = 0x38;
         Cycles(11)
     }
 
@@ -1898,7 +1916,7 @@ impl Cpu {
         let value = mem.read_byte(addr);
         self.a = self.a ^ value;
         self.flags.set(self.a, Some(false), Some(false));
-        Cycles(4)
+        Cycles(7)
     }
 
     fn rp(&mut self, mem: &mut Memory) -> Cycles {

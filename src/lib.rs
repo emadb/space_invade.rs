@@ -1,10 +1,10 @@
 pub mod bus;
 pub mod cpu;
-pub mod i8080;
+pub mod arcade;
 pub mod memory;
 pub mod stack;
 
-use i8080::I8080;
+use arcade::Arcade;
 
 pub const PIXEL_FACTOR: f32 = 5.0;
 
@@ -18,8 +18,8 @@ pub fn run(rom_file: &str) {
         .build()
         .expect("could not create ggez context!");
 
-    let mut i8080 = I8080::new(&ctx);
-    i8080.load_rom(rom_file);
+    let mut arcade = Arcade::new(&ctx);
+    arcade.load_rom(rom_file);
 
-    ggez::event::run(ctx, event_loop, i8080);
+    ggez::event::run(ctx, event_loop, arcade);
 }
