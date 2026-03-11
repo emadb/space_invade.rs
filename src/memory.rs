@@ -1,8 +1,8 @@
 #[derive(Debug)]
 pub struct Memory {
-    rom: [u8; 0x2000],
-    ram: [u8; 0x0400],
-    vram: [u8; 0x1C00],
+    rom: [u8; 0x2000],  // 8k
+    ram: [u8; 0x0400],  // 1k
+    vram: [u8; 0x1C00], // 7k
 }
 
 impl Memory {
@@ -21,15 +21,15 @@ impl Memory {
     pub fn read_byte(&self, addr: u16) -> u8 {
         // Space Invaders hardware mirrors every 16KB (0x4000)
         // across the entire 64KB range.
-        let mirrored_addr = addr % 0x4000;
-        match mirrored_addr {
-            0x0000..=0x1fff => self.rom[mirrored_addr as usize],
+        let addr = addr % 0x4000;
+        match addr {
+            0x0000..=0x1fff => self.rom[addr as usize],
             0x2000..=0x23FF => {
-                let n_addr = mirrored_addr - 0x2000;
+                let n_addr = addr - 0x2000;
                 self.ram[n_addr as usize]
             }
             0x2400..=0x3FFF => {
-                let n_addr = mirrored_addr - 0x2400;
+                let n_addr = addr - 0x2400;
                 self.vram[n_addr as usize]
             }
 
@@ -38,15 +38,15 @@ impl Memory {
     }
 
     pub fn write_byte(&mut self, addr: u16, value: u8) {
-        let mirrored_addr = addr % 0x4000;
-        match mirrored_addr {
+        let addr = addr % 0x4000;
+        match addr {
             0x0000..=0x1fff => {/* ROM is read-only */ },
             0x2000..=0x23FF => {
-                let n_addr = mirrored_addr - 0x2000;
+                let n_addr = addr - 0x2000;
                 self.ram[n_addr as usize] = value
             }
             0x2400..=0x3FFF => {
-                let n_addr = mirrored_addr - 0x2400;
+                let n_addr = addr - 0x2400;
                 self.vram[n_addr as usize] = value
             }
             _ => panic!("out of memory: {:X}", addr),

@@ -46,7 +46,7 @@ Ports:
  */
 
 impl Bus {
-    pub fn init() -> Self {
+    pub fn new() -> Self {
         let mut audio = Audio::new();
         audio.add("exp", "./roms/explosion.wav");
         audio.add("fi1", "./roms/fastinvader1.wav");

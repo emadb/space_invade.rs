@@ -38,17 +38,7 @@ impl fmt::Debug for Cpu {
         write!(
             f,
             "af={:02X}{:02X} bc={:02X}{:02X} de={:02X}{:02X} hl={:02X}{:02X} pc:{:04X} sp:{:04X} flags: {:08b}",
-            self.a,
-            self.flags.0,
-            self.b,
-            self.c,
-            self.d,
-            self.e,
-            self.h,
-            self.l,
-            self.pc,
-            self.sp,
-            self.flags.0
+            self.a, self.flags.0, self.b, self.c, self.d, self.e, self.h, self.l, self.pc, self.sp, self.flags.0
         )
     }
 }

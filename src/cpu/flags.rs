@@ -47,7 +47,7 @@ impl Flags {
     pub fn set(&mut self, value: u8, half_carry: Option<bool>, carry: Option<bool>) {
         let s = (value & 0x80) != 0;
         let z = value == 0;
-        // Even parity: true if number of set bits is even
+
         let p = value.count_ones() % 2 == 0;
 
         let mut new_flags = 0u8;
@@ -55,17 +55,16 @@ impl Flags {
         if z { new_flags |= FLAG_ZERO; }
         if p { new_flags |= FLAG_PARITY; }
 
-        // Bit 1 is ALWAYS 1 on the 8080
         new_flags |= 0b00000010;
 
-        // Handle AC
+        // AC
         if let Some(hc) = half_carry {
             if hc { new_flags |= FLAG_AUX_CARRY; }
         } else {
             new_flags |= self.0 & FLAG_AUX_CARRY;
         }
 
-        // Handle CY
+        // CY
         if let Some(c) = carry {
             if c { new_flags |= FLAG_CARRY; }
         } else {

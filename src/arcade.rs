@@ -19,7 +19,7 @@ impl Arcade {
 
         Self {
             memory: Memory::new(),
-            bus: Bus::init(),
+            bus: Bus::new(),
             cpu: Cpu::new(),
             pixels: pixels,
         }
@@ -30,7 +30,7 @@ impl Arcade {
         self.memory.init_rom(rom_data);
     }
 
-    pub fn update(&mut self) {
+    pub fn run_cycle(&mut self) {
 
         let mut cycles: u64 = 0;
         // CPU 2MHz
@@ -54,8 +54,7 @@ impl Arcade {
 
 impl ggez::event::EventHandler for Arcade {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        self.update();
-
+        self.run_cycle();
         Ok(())
     }
 
@@ -102,6 +101,7 @@ impl ggez::event::EventHandler for Arcade {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
         self.pixels.clear();
 
+        // Video 0x2400..0x3FFF
         for addr in 0x2400..0x3FFF {
             let byte = self.memory.read_byte(addr);
             if byte == 0 {
