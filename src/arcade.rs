@@ -1,4 +1,4 @@
-use crate::{bus::Bus, cpu::cpu::Cpu, memory::Memory};
+        use crate::{bus::{Bus, InputPort}, cpu::cpu::Cpu, memory::Memory};
 use ggez::{
     Context, GameResult,
     graphics::{self, Color, DrawParam, InstanceArray},
@@ -60,17 +60,17 @@ impl ggez::event::EventHandler for Arcade {
 
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> ggez::GameResult {
         match input.keycode {
-            Some(KeyCode::Key0) => { self.bus.set_port_1_bit(0); }  // insert coin
-            Some(KeyCode::Key1) => { self.bus.set_port_1_bit(2); }  // player 1
-            Some(KeyCode::Key2) => { self.bus.set_port_1_bit(1); }  // player 2
+            Some(KeyCode::Key0) => { self.bus.set_bit(InputPort::Port1, 0); }  // insert coin
+            Some(KeyCode::Key1) => { self.bus.set_bit(InputPort::Port1, 2); }  // player 1
+            Some(KeyCode::Key2) => { self.bus.set_bit(InputPort::Port1, 1); }  // player 2
 
-            Some(KeyCode::J) => { self.bus.set_port_1_bit(5); } // P1 Left
-            Some(KeyCode::L) => { self.bus.set_port_1_bit(6); } // P1 right
-            Some(KeyCode::X) => { self.bus.set_port_1_bit(4); } // P1 Fire
+            Some(KeyCode::J) => { self.bus.set_bit(InputPort::Port1, 5); } // P1 Left
+            Some(KeyCode::L) => { self.bus.set_bit(InputPort::Port1, 6); } // P1 right
+            Some(KeyCode::X) => { self.bus.set_bit(InputPort::Port1, 4); } // P1 Fire
 
-            Some(KeyCode::A) => { self.bus.set_port_2_bit(5); } // P2 Left
-            Some(KeyCode::D) => { self.bus.set_port_2_bit(6); } // P2 Right
-            Some(KeyCode::V) => { self.bus.set_port_2_bit(4); } // P2 Fire
+            Some(KeyCode::A) => { self.bus.set_bit(InputPort::Port2, 5); } // P2 Left
+            Some(KeyCode::D) => { self.bus.set_bit(InputPort::Port2, 6); } // P2 Right
+            Some(KeyCode::V) => { self.bus.set_bit(InputPort::Port2, 4); } // P2 Fire
             None => {}
             _ => {}
         }
@@ -79,17 +79,17 @@ impl ggez::event::EventHandler for Arcade {
 
     fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> ggez::GameResult {
         match input.keycode {
-            Some(KeyCode::Key0) => { self.bus.unset_port_1_bit(0); }
-            Some(KeyCode::Key1) => { self.bus.unset_port_1_bit(2); }
-            Some(KeyCode::Key2) => { self.bus.unset_port_1_bit(1); }
+            Some(KeyCode::Key0) => { self.bus.unset_bit(InputPort::Port1, 0); }
+            Some(KeyCode::Key1) => { self.bus.unset_bit(InputPort::Port1, 2); }
+            Some(KeyCode::Key2) => { self.bus.unset_bit(InputPort::Port1, 1); }
 
-            Some(KeyCode::J) => { self.bus.unset_port_1_bit(5); }
-            Some(KeyCode::L) => { self.bus.unset_port_1_bit(6); }
-            Some(KeyCode::X) => { self.bus.unset_port_1_bit(4); }
+            Some(KeyCode::J) => { self.bus.unset_bit(InputPort::Port1, 5); }
+            Some(KeyCode::L) => { self.bus.unset_bit(InputPort::Port1, 6); }
+            Some(KeyCode::X) => { self.bus.unset_bit(InputPort::Port1, 4); }
 
-            Some(KeyCode::A) => { self.bus.unset_port_2_bit(5); }
-            Some(KeyCode::D) => { self.bus.unset_port_2_bit(6); }
-            Some(KeyCode::V) => { self.bus.unset_port_2_bit(4); }
+            Some(KeyCode::A) => { self.bus.unset_bit(InputPort::Port2, 5); }
+            Some(KeyCode::D) => { self.bus.unset_bit(InputPort::Port2, 6); }
+            Some(KeyCode::V) => { self.bus.unset_bit(InputPort::Port2, 4); }
 
             None => {}
             _ => {}

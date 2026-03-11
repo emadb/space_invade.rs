@@ -10,6 +10,10 @@ pub struct Bus {
     prev_port_5: u8,
 }
 
+pub enum InputPort {
+    Port1, Port2
+}
+
 /*
 
 Ports:
@@ -124,23 +128,19 @@ impl Bus {
         }
     }
 
-    pub fn set_port_1_bit(&mut self, bit: u8) {
-        let mask = 0b1 << bit;
-        self.port_1 |= mask;
+     pub fn set_bit(&mut self, port: InputPort, bit: u8) {
+       let mask = 1 << bit;
+        match port {
+            InputPort::Port1 => self.port_1 |= mask,
+            InputPort::Port2 => self.port_2 |= mask,
+        }
     }
 
-    pub fn unset_port_1_bit(&mut self, bit: u8) {
-        let mask = 0b1 << bit;
-        self.port_1 &= !mask;
-    }
-
-    pub fn set_port_2_bit(&mut self, bit: u8) {
-        let mask = 0b1 << bit;
-        self.port_2 |= mask;
-    }
-
-    pub fn unset_port_2_bit(&mut self, bit: u8) {
-        let mask = 0b1 << bit;
-        self.port_2 &= !mask;
+    pub fn unset_bit(&mut self, port: InputPort, bit: u8) {
+        let mask = 1 << bit;
+        match port {
+            InputPort::Port1 => self.port_1 &= !mask,
+            InputPort::Port2 => self.port_2 &= !mask,
+        }
     }
 }

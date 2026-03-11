@@ -1,7 +1,6 @@
 use crate::{bus::Bus, cpu::flags::Flags, memory::Memory};
 use std::fmt;
 
-#[derive(PartialEq)]
 enum Interrupt {
     Enabled(Option<u16>),
     Disabled,
@@ -381,8 +380,6 @@ impl Cpu {
         Cycles(7)
     }
 
-
-
     fn cma(&mut self, _mem: &Memory) -> Cycles {
         self.a = !self.a;
         Cycles(4)
@@ -412,6 +409,7 @@ impl Cpu {
 
         Cycles(4)
     }
+
     fn cmp_a(&mut self, _mem: &Memory) -> Cycles {
         let (res, carry) = self.a.overflowing_sub(self.a);
         let hc = ((self.a & 0x0F) as i16 - (self.a & 0x0F) as i16) < 0;
