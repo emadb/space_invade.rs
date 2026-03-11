@@ -53,15 +53,11 @@ impl Cpu {
             e: 0,
             h: 0,
             l: 0,
-            sp: 0xF000,
+            sp: 0xF000, // starting point
             pc: 0,
             halt: false,
             flags: Flags(0x00),
         }
-    }
-
-    pub fn set_debug_mode(&mut self) {
-        self.pc = 0x100;
     }
 
     fn fetch_byte(&mut self, memory: &Memory) -> u8 {
@@ -89,7 +85,6 @@ impl Cpu {
     }
 
     pub fn send_interrupt(&mut self, int: u16) {
-
         if let Interrupt::Enabled(_) = self.ei  {
             self.ei = Interrupt::Enabled(Some(int))
         }
@@ -107,7 +102,7 @@ impl Cpu {
     fn process_interrupt(&mut self, mem: &mut Memory) {
         if let Interrupt::Enabled(Some(opcode)) = self.ei {
             self.push_sp(mem);
-            self.pc = opcode & 0x0038; // 0b00111000
+            self.pc = opcode & 0x0038; // 0b00111000 => RST Address
             self.ei = Interrupt::Disabled;
             self.halt = false;
         }
