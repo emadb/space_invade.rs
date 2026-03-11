@@ -123,4 +123,24 @@ impl Bus {
             _ => panic!("port does not exists: {}", port)
         }
     }
+
+    pub fn set_port_1_bit(&mut self, bit: u8) {
+        let mask = 0b1 << bit;
+        self.port_1 |= mask;
+    }
+
+    pub fn unset_port_1_bit(&mut self, bit: u8) {
+        let mask = 0b1 << bit;
+        self.port_1 &= !mask;
+    }
+
+    pub fn set_port_2_bit(&mut self, bit: u8) {
+        let mask = 0b1 << bit;
+        self.port_2 |= mask;
+    }
+
+    pub fn unset_port_2_bit(&mut self, bit: u8) {
+        let mask = 0b1 << bit;
+        self.port_2 &= !mask;
+    }
 }

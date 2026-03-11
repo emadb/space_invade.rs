@@ -45,82 +45,11 @@ impl I8080 {
             cycles += self.cpu.run_step(&mut self.memory, &mut self.bus) as u64;
         }
         self.cpu.send_interrupt(0xD7); // Updates game state and draws sprites
-        
+
         // TODO: is there a better way?
         std::thread::sleep(std::time::Duration::from_millis(25));
     }
 
-    fn insert_coin_down(&mut self) {
-        self.bus.port_1 = 0x01;
-    }
-
-    fn insert_coin_up(&mut self) {
-        self.bus.port_1 &= !0x01;
-    }
-
-    fn player_1_down(&mut self) {
-        self.bus.port_1 = 0x04;
-    }
-
-    fn player_1_up(&mut self) {
-        self.bus.port_1 &= !0x04;
-    }
-
-    fn player_2_down(&mut self) {
-        self.bus.port_1 = 0x02;
-    }
-
-    fn player_2_up(&mut self) {
-        self.bus.port_1 &= !0x02;
-    }
-
-    fn left_1_down(&mut self) {
-        self.bus.port_1 = 0x20;
-    }
-
-    fn left_1_up(&mut self) {
-        self.bus.port_1 &= !0x20;
-    }
-
-    fn right_1_down(&mut self) {
-        self.bus.port_1 = 0x40;
-    }
-
-    fn right_1_up(&mut self) {
-        self.bus.port_1 &= !0x40;
-    }
-
-    fn fire_1_down(&mut self) {
-        self.bus.port_1 = 0x10;
-    }
-
-    fn fire_1_up(&mut self) {
-        self.bus.port_1 &= !0x10;
-    }
-
-    fn left_2_down(&mut self) {
-        self.bus.port_2 = 0x20;
-    }
-
-    fn left_2_up(&mut self) {
-        self.bus.port_2 &= !0x20;
-    }
-
-    fn right_2_down(&mut self) {
-        self.bus.port_2 = 0x40;
-    }
-
-    fn right_2_up(&mut self) {
-        self.bus.port_2 &= !0x40;
-    }
-
-    fn fire_2_down(&mut self) {
-        self.bus.port_2 = 0x10;
-    }
-
-    fn fire_2_up(&mut self) {
-        self.bus.port_2 &= !0x10;
-    }
 }
 
 impl ggez::event::EventHandler for I8080 {
@@ -132,17 +61,17 @@ impl ggez::event::EventHandler for I8080 {
 
     fn key_down_event(&mut self, _ctx: &mut Context, input: KeyInput, _repeat: bool) -> ggez::GameResult {
         match input.keycode {
-            Some(KeyCode::Key0) => { self.insert_coin_down(); }
-            Some(KeyCode::Key1) => { self.player_1_down(); }
-            Some(KeyCode::Key2) => { self.player_2_down(); }
+            Some(KeyCode::Key0) => { self.bus.set_port_1_bit(0); }  // insert coin
+            Some(KeyCode::Key1) => { self.bus.set_port_1_bit(2); }  // player 1
+            Some(KeyCode::Key2) => { self.bus.set_port_1_bit(1); }  // player 2
 
-            Some(KeyCode::L) => { self.left_1_down(); }
-            Some(KeyCode::Apostrophe) => { self.right_1_down(); }
-            Some(KeyCode::M) => { self.fire_1_down(); }
+            Some(KeyCode::J) => { self.bus.set_port_1_bit(5); } // P1 Left
+            Some(KeyCode::L) => { self.bus.set_port_1_bit(6); } // P1 right
+            Some(KeyCode::X) => { self.bus.set_port_1_bit(4); } // P1 Fire
 
-            Some(KeyCode::A) => { self.left_2_down(); }
-            Some(KeyCode::D) => { self.right_2_down(); }
-            Some(KeyCode::V) => { self.fire_2_down(); }
+            Some(KeyCode::A) => { self.bus.set_port_2_bit(5); } // P2 Left
+            Some(KeyCode::D) => { self.bus.set_port_2_bit(6); } // P2 Right
+            Some(KeyCode::V) => { self.bus.set_port_2_bit(4); } // P2 Fire
             None => {}
             _ => {}
         }
@@ -151,17 +80,17 @@ impl ggez::event::EventHandler for I8080 {
 
     fn key_up_event(&mut self, _ctx: &mut Context, input: KeyInput) -> ggez::GameResult {
         match input.keycode {
-            Some(KeyCode::Key0) => { self.insert_coin_up(); }
-            Some(KeyCode::Key1) => { self.player_1_up(); }
-            Some(KeyCode::Key2) => { self.player_2_up(); }
+            Some(KeyCode::Key0) => { self.bus.unset_port_1_bit(0); }
+            Some(KeyCode::Key1) => { self.bus.unset_port_1_bit(2); }
+            Some(KeyCode::Key2) => { self.bus.unset_port_1_bit(1); }
 
-            Some(KeyCode::L) => { self.left_1_up(); }
-            Some(KeyCode::Apostrophe) => { self.right_1_up(); }
-            Some(KeyCode::M) => { self.fire_1_up(); }
+            Some(KeyCode::J) => { self.bus.unset_port_1_bit(5); }
+            Some(KeyCode::L) => { self.bus.unset_port_1_bit(6); }
+            Some(KeyCode::X) => { self.bus.unset_port_1_bit(4); }
 
-            Some(KeyCode::A) => { self.left_2_up(); }
-            Some(KeyCode::D) => { self.right_2_up(); }
-            Some(KeyCode::V) => { self.fire_2_up(); }
+            Some(KeyCode::A) => { self.bus.unset_port_2_bit(5); }
+            Some(KeyCode::D) => { self.bus.unset_port_2_bit(6); }
+            Some(KeyCode::V) => { self.bus.unset_port_2_bit(4); }
 
             None => {}
             _ => {}
