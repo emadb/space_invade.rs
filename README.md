@@ -45,9 +45,9 @@ cargo run --release
 | `0` | Insert Coin |
 | `1` | Start 1 Player Game |
 | `2` | Start 2 Players Game |
-| `l` | P1 Move Left |
-| `'` | P1 Move Right |
-| `m` | P1 Fire |
+| `j` | P1 Move Left |
+| `l` | P1 Move Right |
+| `x` | P1 Fire |
 | `a` | P2 Move Left |
 | `d` | P2 Move Right |
 | `v` | P2 Fire |
